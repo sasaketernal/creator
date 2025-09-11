@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Pac-Man: Just Create Edition</title>
   <style>
     :root {
@@ -16,6 +16,7 @@
     }
 
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       font-family: system-ui, Arial, sans-serif;
       margin: 0;
@@ -44,27 +45,54 @@
     .brand img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #0c0f15; border:1px solid var(--border); }
 
     .card { background: var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:12px; }
-    .row { display:flex; gap:8px; align-items:center; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
     .row > * { flex: 1 1 auto; }
     .muted { color: var(--muted); font-size:12px; }
-    .btn { background: var(--brand); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .btn { background: var(--brand); color:white; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; }
     .btn.secondary { background:#1f2430; color:#d2d6e1; border:1px solid #2a2f3a; }
     .btn:disabled { opacity:.5; cursor:not-allowed; }
     .value { font-weight:600; }
     .name-input { width:100%; padding:10px; border-radius:8px; background:#0c0f15; color:var(--text); border:1px solid var(--border); }
 
     .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; position: relative; z-index: 1; }
-    canvas { background:#000; border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.35); image-rendering: pixelated; }
+    canvas { background:#000; border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,.35); image-rendering: pixelated; max-width: 100%; height: auto; }
 
     .toast { position:fixed; top:12px; right:12px; background:#10131a; color:#cfe1ff; border:1px solid #2b7cff55; border-radius:10px; padding:8px 12px; font-size:14px; display:none; z-index: 3; }
 
-    dialog { background:var(--card-bg); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:0; max-width:520px; width:92vw; }
+    dialog { background:var(--card-bg); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:0; max-width:520px; width:96vw; }
     dialog::backdrop { background: rgba(0,0,0,.6); }
-    .dl-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-    .dl-body { padding:16px; }
+    .dl-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .dl-body { padding:16px; overflow:auto; max-height: 70vh; }
     .tbl { width:100%; border-collapse: collapse; }
     .tbl th, .tbl td { padding:8px; border-bottom:1px solid var(--border); text-align:left; }
     .tbl th { font-size:12px; color:var(--muted); font-weight:500; }
+
+    /* ====== Mobile tweaks ====== */
+    @media (max-width: 820px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 12px;
+        background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent);
+      }
+      .brand img { width: 36px; height: 36px; }
+      .sidebar h1 { font-size: 18px; }
+      .row { flex-direction: row; }
+      .row > * { flex: 1 1 48%; } /* tombol jadi 2 kolom di mobile */
+      .muted { font-size: 12px; }
+      .main { padding: 12px; }
+      .toast { top: 10px; right: 10px; font-size: 13px; }
+
+      /* On-screen controller only on mobile */
+      .controller { display: grid; grid-template-columns: 64px 64px 64px; grid-template-rows: 64px 64px 64px; gap:8px; align-items:center; justify-items:center; }
+      .ctrl-btn { width:64px; height:64px; border-radius:12px; border:1px solid #2a2f3a; background:#161a22; color:#d2d6e1; font-size:18px; }
+      .ctrl-btn:active { transform: scale(.98); }
+    }
+    @media (min-width: 821px) {
+      .controller { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -98,6 +126,17 @@
 
   <main class="main">
     <canvas id="game" width="560" height="560" aria-label="Game board"></canvas>
+
+    <!-- On-screen controller (mobile) -->
+    <div class="controller" aria-label="Touch Controller" role="group">
+      <span></span>
+      <button class="ctrl-btn" data-key="ArrowUp" aria-label="Up">▲</button>
+      <span></span>
+      <button class="ctrl-btn" data-key="ArrowLeft" aria-label="Left">◀</button>
+      <button class="ctrl-btn" data-key="ArrowDown" aria-label="Down">▼</button>
+      <button class="ctrl-btn" data-key="ArrowRight" aria-label="Right">▶</button>
+      <span></span><span></span><span></span>
+    </div>
   </main>
 
   <div class="toast" id="toast"></div>
@@ -133,7 +172,8 @@
     }
 
     // ====== Map (0 empty, 1 wall, 2 dot, 3 pellet) ======
-    const W = 20, H = 20, TILE = 28;
+    const W = 20, H = 20;
+    let TILE = 28; // made responsive (was const)
     const baseMap = [
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       [1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,2,1],
@@ -158,14 +198,39 @@
     ];
 
     // ====== Game state ======
-    const ctx = document.getElementById('game').getContext('2d');
+    const gameCanvas = document.getElementById('game');
+    const ctx = gameCanvas.getContext('2d');
     let map, dotsLeft, score, lives, level, running = false, paused = false;
     const player = { x: 1, y: 1, dir: {x:1,y:0}, pending: {x:1,y:0}, speed: 6, power: 0, mouth: 0.25, mouthDir: 1 };
     const ghosts = [];
 
-    // color pool for ghosts
     const ghostColors = ["#ff4d6d", "#4dd9ff", "#ffb84d", "#b84dff", "#72f1b8"];
 
+    // ====== Responsive canvas ======
+    function resizeCanvas() {
+      // hitung ukuran target berbasis viewport
+      const isMobile = window.matchMedia('(max-width: 820px)').matches;
+
+      // ruang horizontal & vertikal yang realistis
+      const sidePad = isMobile ? 24 : 32;
+      const topPad = isMobile ? 16 : 24;
+
+      // pada mobile, sidebar berada di atas; beri ruang untuk kontrol sentuh (sekitar 220px)
+      const reservedMobile = isMobile ? 220 : 0;
+
+      const maxW = Math.min(window.innerWidth - sidePad, 720); // batasi agar tidak terlalu besar
+      const maxH = window.innerHeight - topPad - reservedMobile;
+
+      const maxSquare = Math.max(240, Math.min(maxW, maxH)); // tetap minimal 240px agar nyaman
+      const tile = Math.max(12, Math.floor(maxSquare / W));  // jaga agar grid terlihat
+      TILE = tile;
+
+      const size = tile * W;
+      gameCanvas.width = size;
+      gameCanvas.height = size;
+    }
+
+    // ====== Reset ======
     function reset(levelUp=false) {
       map = baseMap.map(row => row.slice());
       dotsLeft = 0; map.forEach(r=>r.forEach(c=>{ if(c===2) dotsLeft++; }));
@@ -181,6 +246,7 @@
       document.getElementById('score').textContent = score;
       document.getElementById('lives').textContent = lives;
       lastTime = performance.now();
+      resizeCanvas(); // penting: set ukuran kanvas saat reset
     }
 
     function makeGhost(x,y,speed,color){ return { x, y, dir: {x:-1,y:0}, speed, scared: 0, scatter: 0, color }; }
@@ -198,12 +264,21 @@
       }
     }
 
-    // ====== Input ======
+    // ====== Input (keyboard) ======
     window.addEventListener('keydown', (e)=>{
       if (e.key.toLowerCase()==='r') return (reset(), void 0);
       if (e.key.toLowerCase()==='p') return (paused = !paused, void 0);
       const m = { ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0}, ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1} }[e.key];
       if (m) player.pending = m;
+    });
+
+    // ====== Touch controller (mobile) ======
+    document.querySelectorAll('.ctrl-btn').forEach(btn=>{
+      const key = btn.getAttribute('data-key');
+      btn.addEventListener('click', ()=>{
+        const mapKey = { ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0}, ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1} }[key];
+        if (mapKey) player.pending = mapKey;
+      });
     });
 
     // ====== Ghost AI ======
@@ -222,7 +297,6 @@
         });
         gh.dir = options[0] || {x:0,y:0};
         gh.scatter = rand(6, 18);
-        // change color occasionally for fun
         if (Math.random() < 0.25) gh.color = ghostColors[rand(0, ghostColors.length-1)];
       }
     }
@@ -232,12 +306,11 @@
     function loop(ts){ if (!running) return; const dt = Math.min(0.05, (ts - lastTime)/1000); lastTime = ts; if (!paused) update(dt); render(); requestAnimationFrame(loop); }
 
     function update(dt){
-      // Turn when possible
       if (canMove(player.x + player.pending.x, player.y + player.pending.y)) player.dir = player.pending;
       stepEntity(player, dt);
 
-      // Mouth animation: oscillate between 0.05 and 0.45 radians
-      const speedFactor = (player.dir.x!==0 || player.dir.y!==0) ? 1 : 0.4; // slower when idle
+      // Mouth animation
+      const speedFactor = (player.dir.x!==0 || player.dir.y!==0) ? 1 : 0.4;
       player.mouth += player.mouthDir * 3.2 * dt * speedFactor;
       if (player.mouth > 0.45) { player.mouth = 0.45; player.mouthDir = -1; }
       if (player.mouth < 0.05) { player.mouth = 0.05; player.mouthDir = 1; }
@@ -261,58 +334,54 @@
         }
       }
 
-      // Power timer
       if (player.power>0) player.power--;
-
-      // Level complete
       if (dotsLeft<=0) { showToast('Level up!'); nextLevel(); }
 
-      // UI
       document.getElementById('score').textContent = score;
       document.getElementById('lives').textContent = lives;
     }
 
     function render(){
-      ctx.clearRect(0,0, W*TILE, H*TILE);
+      const TILEW = TILE, TILEH = TILE;
+      ctx.clearRect(0,0, W*TILEW, H*TILEH);
+
       // Map
       for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
         const t = map[y][x];
-        if (t===1) { // wall
+        if (t===1) {
           ctx.fillStyle = '#1c2a4a';
-          ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
+          ctx.fillRect(x*TILEW, y*TILEH, TILEW, TILEH);
           ctx.strokeStyle = '#2b7cff55';
-          ctx.strokeRect(x*TILE+2, y*TILE+2, TILE-4, TILE-4);
-        } else if (t===2) { // dot
+          ctx.strokeRect(x*TILEW+2, y*TILEH+2, TILEW-4, TILEH-4);
+        } else if (t===2) {
           ctx.fillStyle = '#ffd166';
-          ctx.beginPath(); ctx.arc(x*TILE+TILE/2, y*TILE+TILE/2, 3, 0, Math.PI*2); ctx.fill();
-        } else if (t===3) { // power pellet
+          ctx.beginPath(); ctx.arc(x*TILEW+TILEW/2, y*TILEH+TILEH/2, Math.max(2, Math.floor(TILE*0.11)), 0, Math.PI*2); ctx.fill();
+        } else if (t===3) {
           ctx.fillStyle = '#72f1b8';
-          ctx.beginPath(); ctx.arc(x*TILE+TILE/2, y*TILE+TILE/2, 6, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x*TILEW+TILEW/2, y*TILEH+TILEH/2, Math.max(4, Math.floor(TILE*0.21)), 0, Math.PI*2); ctx.fill();
         }
       }
 
-      // Player with opening/closing mouth
+      // Player
       const px = player.x*TILE + TILE/2, py = player.y*TILE + TILE/2, r = TILE*0.35;
-      let base = 0; // facing right
+      let base = 0;
       if (player.dir.x===-1) base = Math.PI;
       else if (player.dir.y===-1) base = -Math.PI/2;
       else if (player.dir.y===1) base = Math.PI/2;
       let start = base + player.mouth;
       let end = base - player.mouth;
-      // draw the LARGE sector (body) by ensuring end > start and spanning > PI
       if (end < start) end += Math.PI * 2;
       ctx.fillStyle = player.power>0 ? '#72f1b8' : '#ffcd00';
       ctx.beginPath();
       ctx.moveTo(px, py);
-      ctx.arc(px, py, r, start, end); // clockwise, big arc
+      ctx.arc(px, py, r, start, end);
       ctx.closePath();
       ctx.fill();
-      // simple eye
       const eyeOffsetX = Math.cos(base) * r * 0.35 - Math.sin(base) * r * 0.15;
       const eyeOffsetY = Math.sin(base) * r * 0.35 + Math.cos(base) * r * 0.15;
       ctx.fillStyle = '#000';
       ctx.beginPath();
-      ctx.arc(px + eyeOffsetX, py + eyeOffsetY, 2, 0, Math.PI*2);
+      ctx.arc(px + eyeOffsetX, py + eyeOffsetY, Math.max(2, Math.floor(TILE*0.07)), 0, Math.PI*2);
       ctx.fill();
 
       // Ghosts
@@ -375,6 +444,14 @@
       });
     };
     document.getElementById('btnSkipSave').onclick = ()=> document.getElementById('dlgLB').close();
+
+    // Resize handler
+    window.addEventListener('resize', ()=> {
+      const prev = TILE;
+      resizeCanvas();
+      // Tidak perlu ubah state; hanya render ulang dengan TILE baru
+      if (prev !== TILE) render();
+    }, { passive: true });
 
     // Boot
     reset();
