@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <title>Just Create Chaos Generator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Google Font: Bebas Neue (for attractor text) -->
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+
     <!-- p5 core + sound -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.min.js"></script>
     <script src="sketch.js"></script>
+
     <style>
       :root { --ui-bg: rgba(0,0,0,.45); --ui-text:#fff; }
       body { margin:0; overflow:hidden; background:#000; }
@@ -25,11 +30,13 @@
       }
       #saveBtn { bottom: 12px; }
       #modeBtn { bottom: 56px; }
+      #attractBtn { bottom: 100px; }
       .btn:active { transform: scale(0.98); }
     </style>
   </head>
   <body>
     <div id="info" class="ui">Click / tap to unleash chaos • Press <b>S</b> to save • #JustCreate</div>
+    <button id="attractBtn" class="ui btn" aria-label="Form the words">🧲 Form “JUST CREATE”</button>
     <button id="modeBtn" class="ui btn" aria-label="Toggle Zen/Chaos Mode">🧘 Zen Mode</button>
     <button id="saveBtn" class="ui btn" aria-label="Save your chaos">📸 Save</button>
   </body>
