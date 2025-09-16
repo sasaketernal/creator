@@ -3,20 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <title>Just Create Chaos Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
     <script src="sketch.js"></script>
     <style>
+      :root { --ui-bg: rgba(0,0,0,.45); --ui-text:#fff; }
       body { margin:0; overflow:hidden; background:#000; }
-      #info {
-        position: absolute;
-        top: 10px; left: 50%; transform: translateX(-50%);
-        font-family: sans-serif; color: white;
-        background: rgba(0,0,0,0.4); padding: 6px 10px;
-        border-radius: 6px;
+      #info, #saveBtn {
+        position: fixed; z-index: 5; font-family: system-ui, sans-serif; color: var(--ui-text);
+        backdrop-filter: blur(6px);
       }
+      #info {
+        top: 10px; left: 50%; transform: translateX(-50%);
+        background: var(--ui-bg); padding: 6px 10px; border-radius: 8px; font-size: 14px;
+      }
+      #saveBtn {
+        right: 12px; bottom: 12px; border: 0; border-radius: 10px;
+        background: var(--ui-bg); padding: 10px 14px; cursor: pointer; font-weight: 600;
+      }
+      #saveBtn:active { transform: scale(0.98); }
     </style>
   </head>
   <body>
-    <div id="info">Click anywhere to unleash chaos • #JustCreate</div>
+    <div id="info">Click / tap to unleash chaos • Press <b>S</b> or use the button to save • #JustCreate</div>
+    <button id="saveBtn" aria-label="Save your chaos">📸 Save</button>
   </body>
 </html>
