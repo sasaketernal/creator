@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <title>Just Create Chaos Generator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- p5 core + sound -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.min.js"></script>
     <script src="sketch.js"></script>
     <style>
       :root { --ui-bg: rgba(0,0,0,.45); --ui-text:#fff; }
       body { margin:0; overflow:hidden; background:#000; }
-      #info, #saveBtn {
+      .ui {
         position: fixed; z-index: 5; font-family: system-ui, sans-serif; color: var(--ui-text);
         backdrop-filter: blur(6px);
       }
@@ -17,15 +19,18 @@
         top: 10px; left: 50%; transform: translateX(-50%);
         background: var(--ui-bg); padding: 6px 10px; border-radius: 8px; font-size: 14px;
       }
-      #saveBtn {
-        right: 12px; bottom: 12px; border: 0; border-radius: 10px;
-        background: var(--ui-bg); padding: 10px 14px; cursor: pointer; font-weight: 600;
+      .btn {
+        right: 12px; border: 0; border-radius: 10px;
+        background: var(--ui-bg); padding: 10px 14px; cursor: pointer; font-weight: 600; color: var(--ui-text);
       }
-      #saveBtn:active { transform: scale(0.98); }
+      #saveBtn { bottom: 12px; }
+      #modeBtn { bottom: 56px; }
+      .btn:active { transform: scale(0.98); }
     </style>
   </head>
   <body>
-    <div id="info">Click / tap to unleash chaos • Press <b>S</b> or use the button to save • #JustCreate</div>
-    <button id="saveBtn" aria-label="Save your chaos">📸 Save</button>
+    <div id="info" class="ui">Click / tap to unleash chaos • Press <b>S</b> to save • #JustCreate</div>
+    <button id="modeBtn" class="ui btn" aria-label="Toggle Zen/Chaos Mode">🧘 Zen Mode</button>
+    <button id="saveBtn" class="ui btn" aria-label="Save your chaos">📸 Save</button>
   </body>
 </html>
