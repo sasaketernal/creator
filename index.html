@@ -12,32 +12,46 @@
       :root { --ui-bg: rgba(0,0,0,.45); --ui-text:#fff; }
       body { margin:0; overflow:hidden; background:#000; }
       .ui {
-        position: fixed; z-index: 5; font-family: system-ui, sans-serif; color: var(--ui-text);
+        position: fixed; z-index: 5;
+        font-family: system-ui, sans-serif;
+        color: var(--ui-text);
         backdrop-filter: blur(6px);
       }
       #info {
         top: 10px; left: 50%; transform: translateX(-50%);
-        background: var(--ui-bg); padding: 6px 10px; border-radius: 8px; font-size: 14px;
+        background: var(--ui-bg);
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+        display: flex; align-items: center; gap: 8px;
       }
-      #controls {
-        top: 10px; left: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-        background: var(--ui-bg); padding: 6px 8px; border-radius: 10px;
+      #creatorLink {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-weight: 600;
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        transition: background 0.2s;
       }
-      select, .btn, input[type="checkbox"] + label {
-        border: 0; border-radius: 10px; background: var(--ui-bg);
-        color: var(--ui-text); padding: 8px 10px; font-weight: 600; cursor: pointer;
+      #creatorLink:hover {
+        background: rgba(255,255,255,0.25);
       }
-      .btn:active { transform: scale(0.98); }
-      #modeBtn { right: 12px; bottom: 56px; position: fixed; }
-      #saveBtn { right: 12px; bottom: 12px; position: fixed; }
-      label { font-size: 12px; opacity: .9; }
-      .checkwrap { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius: 10px; background: var(--ui-bg); }
-      .checkwrap input { transform: scale(1.1); }
     </style>
   </head>
   <body>
-    <div id="info" class="ui">Click / tap to unleash chaos • Press <b>S</b> to save • #JustCreate</div>
+    <div id="info" class="ui">
+      <span>Click / tap to unleash chaos • Press <b>S</b> to save • #JustCreate</span>
+      <a id="creatorLink"
+         href="https://dexscreener.com/solana/4ZFHpmXteZs9cGao87L3qkJzRBxeziesgphhpLvLpump"
+         target="_blank"
+         rel="noopener noreferrer">
+        $creator
+      </a>
+    </div>
 
+    <!-- kontrol yang sudah ada -->
     <div id="controls" class="ui">
       <label for="themeSelect">Theme</label>
       <select id="themeSelect" aria-label="Color Theme">
