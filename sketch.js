@@ -75,4 +75,155 @@ function setup() {
 
   // UI hooks
   document.getElementById('saveBtn').addEventListener('click', captureFrame);
-  const modeBtn = document.getElementB
+  const modeBtn = document.getElementById('modeBtn');
+  modeBtn.addEventListener('click', () => {
+    setMode(mode === 'ZEN' ? 'CHAOS' : 'ZEN');
+    modeBtn.textContent = mode === 'ZEN' ? '🧘 Zen Mode' : '⚡ Chaos Mode';
+  });
+
+  const themeSelect = document.getElementById('themeSelect');
+  themeSelect.value = theme;
+  themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
+
+  const emojiToggle = document.getElementById('emojiToggle');
+  emojisEnabled = emojiToggle.checked;
+  emojiToggle.addEventListener('change', (e) => {
+    emojisEnabled = e.target.checked;
+  });
+}
+
+function draw() {
+  background(0, BG_TRAIL);
+  for (let p of particles) { p.update(); p.display(); }
+  particles = particles.filter(p => p.life > 0);
+}
+
+// Mouse + Touch
+function mousePressed() {
+  ensureAudio();
+  spawnBurst(mouseX, mouseY);
+  playClickSound();
+}
+function touchStarted() {
+  ensureAudio();
+  spawnBurst(touchX, touchY);
+  playClickSound();
+  return false;
+}
+
+// ====== PARTICLES ======
+class Chaos {
+  constructor(x, y) {
+    this.pos = createVector(x, y);
+    this.vel = p5.Vector.random2D().mult(random(SPEED_MIN, SPEED_MAX));
+    this.size = random(12, 44);
+    const c = random(PALETTE);
+    this.col = [c[0], c[1], c[2], 220];
+    this.life = 255;
+
+    // apakah partikel ini emoji?
+    this.isEmoji = emojisEnabled && random() < EMOJI_PROB;
+    if (this.isEmoji) {
+      this.emoji = random(EMOJI_SET);
+      this.rotation = random(TWO_PI);
+      this.spin = random(-0.04, 0.04);
+    }
+  }
+  update() {
+    this.pos.add(this.vel);
+    this.life -= mode === 'ZEN' ? 2.1 : 3.2;
+    if (this.isEmoji) this.rotation += this.spin;
+  }
+  display() {
+    if (this.isEmoji) {
+      push();
+      translate(this.pos.x, this.pos.y);
+      rotate(this.rotation);
+      textAlign(CENTER, CENTER);
+      // ukuran emoji mengikuti size
+      textSize(this.size * 1.2);
+      // gunakan fill putih agar emoji tetap terang di berbagai platform
+      fill(255, this.life);
+      text(this.emoji, 0, 0);
+      pop();
+    } else {
+      fill(this.col[0], this.col[1], this.col[2], this.life);
+      ellipse(this.pos.x, this.pos.y, this.size);
+    }
+
+    // sesekali teks JUST CREATE
+    if (random() < (mode === 'ZEN' ? TEXT_CHANCE * 0.5 : TEXT_CHANCE)) {
+      push();
+      fill(255, this.life);
+      textAlign(CENTER, CENTER);
+      textSize(random(16, 48));
+      text("JUST CREATE", this.pos.x, this.pos.y);
+      pop();
+    }
+  }
+}
+
+function spawnBurst(x, y) {
+  const n = floor(random(SPAWN_MIN, SPAWN_MAX));
+  for (let i = 0; i < n; i++) particles.push(new Chaos(x, y));
+}
+
+// ====== MODE & THEME ======
+function setMode(next) {
+  mode = next;
+  if (mode === 'ZEN') {
+    BG_TRAIL = 15;
+    TEXT_CHANCE = 0.004;
+    SPAWN_MIN = 3; SPAWN_MAX = 8;
+    SPEED_MIN = 0.6; SPEED_MAX = 2.5;
+    document.body.style.background = '#030b10';
+    EMOJI_PROB = 0.25; // sedikit lebih tenang
+  } else {
+    BG_TRAIL = 40;
+    TEXT_CHANCE = 0.012;
+    SPAWN_MIN = 6; SPAWN_MAX = 18;
+    SPEED_MIN = 1, SPEED_MAX = 6;
+    document.body.style.background = '#000';
+    EMOJI_PROB = 0.4; // lebih liar
+  }
+}
+
+function setTheme(name) {
+  theme = name in THEME_MAP ? name : 'CHAOS';
+  PALETTE = THEME_MAP[theme];
+}
+
+// ====== SAVE / WATERMARK ======
+function keyPressed() {
+  if (key === 's' || key === 'S') captureFrame();
+}
+
+function captureFrame() {
+  toggleUI(false);
+  // Watermark only on export
+  push();
+  noStroke();
+  fill(255, 190);
+  textSize(14);
+  textAlign(RIGHT, BOTTOM);
+  text(`#JustCreate • ${mode} • ${theme} • ${emojisEnabled ? 'EMOJI' : 'NO-EMOJI'} • @CreatorCoin`,
+       width - 10, height - 10);
+  pop();
+
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  saveCanvas(cnv, `just-create-${mode.toLowerCase()}-${theme.toLowerCase()}-${emojisEnabled?'emoji':'plain'}-${ts}`, 'png');
+
+  redraw();
+  setTimeout(() => toggleUI(true), 50);
+}
+
+function toggleUI(show) {
+  for (const id of ['info', 'saveBtn', 'modeBtn', 'controls']) {
+    const el = document.getElementById(id);
+    if (el) el.style.visibility = show ? 'visible' : 'hidden';
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
