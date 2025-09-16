@@ -19,19 +19,35 @@
         top: 10px; left: 50%; transform: translateX(-50%);
         background: var(--ui-bg); padding: 6px 10px; border-radius: 8px; font-size: 14px;
       }
-      .btn {
-        right: 12px; border: 0; border-radius: 10px;
-        background: var(--ui-bg); padding: 10px 14px; cursor: pointer; font-weight: 600; color: var(--ui-text);
+      #controls {
+        top: 10px; left: 10px; display: flex; gap: 8px; align-items: center;
+        background: var(--ui-bg); padding: 6px 8px; border-radius: 10px;
       }
-      #saveBtn { bottom: 12px; }
-      #modeBtn { bottom: 56px; }
-      #attractBtn { bottom: 100px; }
+      select, .btn {
+        border: 0; border-radius: 10px; background: var(--ui-bg);
+        color: var(--ui-text); padding: 8px 10px; font-weight: 600; cursor: pointer;
+      }
       .btn:active { transform: scale(0.98); }
+      #modeBtn { right: 12px; bottom: 56px; position: fixed; }
+      #saveBtn { right: 12px; bottom: 12px; position: fixed; }
+      label { font-size: 12px; opacity: .9; }
     </style>
   </head>
   <body>
     <div id="info" class="ui">Click / tap to unleash chaos • Press <b>S</b> to save • #JustCreate</div>
-    <button id="attractBtn" class="ui btn" aria-label="Form the words">🧲 Form “JUST CREATE”</button>
+
+    <div id="controls" class="ui">
+      <label for="themeSelect">Theme</label>
+      <select id="themeSelect" aria-label="Color Theme">
+        <option value="CHAOS">Chaos (vibrant)</option>
+        <option value="ZEN">Zen (soft)</option>
+        <option value="NEON">Neon</option>
+        <option value="SUNSET">Sunset</option>
+        <option value="MONO">Monochrome</option>
+        <option value="PASTEL">Pastel Pop</option>
+      </select>
+    </div>
+
     <button id="modeBtn" class="ui btn" aria-label="Toggle Zen/Chaos Mode">🧘 Zen Mode</button>
     <button id="saveBtn" class="ui btn" aria-label="Save your chaos">📸 Save</button>
   </body>
