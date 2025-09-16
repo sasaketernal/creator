@@ -10,9 +10,6 @@ let targets = [];            // array of {x, y}
 let targetGraphic;           // offscreen buffer used to sample text
 const AUTO_ACTIVATE_AFTER = 20;  // clicks/taps before auto-attractor
 
-// Font
-let bebasFont; // loaded in preload()
-
 // Visual params (auto-updated by setMode)
 let BG_TRAIL = 40;
 let TEXT_CHANCE = 0.012;
@@ -27,12 +24,6 @@ const ZEN_PALETTE = [
 const CHAOS_PALETTE = [
   [255, 70, 90], [70, 170, 255], [255, 230, 80], [160, 255, 120], [230, 90, 255]
 ];
-
-// ====== PRELOAD (load Bebas Neue for attractor text) ======
-function preload() {
-  // Direct woff2 (Google Fonts CDN). p5 will fetch this cross-origin just fine.
-  bebasFont = loadFont('https://fonts.gstatic.com/s/bebasneue/v20/JTUSjIg1_i6t8kCHKm45_QpRyS7h.woff2');
-}
 
 // ====== AUDIO (p5.sound) ======
 function ensureAudio() {
@@ -139,18 +130,22 @@ class Chaos {
     const desired = p5.Vector.sub(this.target, this.pos);
     const dist = desired.mag();
     if (dist < 2) {
-      this.vel.mult(0.85); // settle gently
+      // settle gently at the target
+      this.vel.mult(0.85);
       return;
     }
     desired.normalize();
-    desired.mult(mode === 'ZEN' ? 1.2 : 2.2);
+    desired.mult(mode === 'ZEN' ? 1.2 : 2.2); // desired speed toward target
+    // ease the velocity toward desired (smooth steering)
     this.vel = p5.Vector.lerp(this.vel, desired, mode === 'ZEN' ? 0.06 : 0.12);
+    // mild damping so they don't overshoot
     this.vel.limit(mode === 'ZEN' ? 2.2 : 3.2);
   }
 
   update() {
     if (ATTRACTOR_ACTIVE) this.steerToTarget();
     this.pos.add(this.vel);
+    // slow down life decay so particles persist for the formation
     const decay = ATTRACTOR_ACTIVE ? (mode === 'ZEN' ? 1.4 : 1.8) : (mode === 'ZEN' ? 2.1 : 3.2);
     this.life -= decay;
   }
@@ -159,6 +154,7 @@ class Chaos {
     fill(this.col[0], this.col[1], this.col[2], this.life);
     ellipse(this.pos.x, this.pos.y, this.size);
 
+    // occasional text burst (less frequent when forming the letters)
     if (!ATTRACTOR_ACTIVE && random() < TEXT_CHANCE) {
       push();
       fill(255, this.life);
@@ -217,12 +213,9 @@ function buildTargets() {
   targetGraphic.noStroke();
   targetGraphic.textAlign(CENTER, CENTER);
 
-  // === Use Bebas Neue for the attractor text ===
-  targetGraphic.textFont(bebasFont);
-
+  // Better fonts if available in the system; else default
   targetGraphic.textSize(titleSize);
   targetGraphic.text('JUST', width / 2, height / 2 - subtitleSize / 2 - gap / 2);
-
   targetGraphic.textSize(subtitleSize);
   targetGraphic.text('CREATE', width / 2, height / 2 + titleSize / 2 + gap / 2);
   targetGraphic.pop();
@@ -241,6 +234,7 @@ function buildTargets() {
     }
   }
 
+  // Shuffle for prettier distribution
   shuffleArray(targets);
 }
 
@@ -248,12 +242,13 @@ function activateAttractor() {
   if (ATTRACTOR_ACTIVE) return;
   ATTRACTOR_ACTIVE = true;
 
+  // Make sure we have fresh targets (in case of resize)
   if (targets.length === 0) buildTargets();
 
+  // Assign targets to existing particles
   for (let i = 0; i < particles.length; i++) {
     particles[i].assignTarget(nextTarget());
   }
-
   // Small congratulatory bleep
   ensureAudio();
   const osc = new p5.Oscillator('triangle');
@@ -305,7 +300,8 @@ function toggleUI(show) {
 // ====== UTIL ======
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  buildTargets(); // rebuilt with Bebas Neue at new size
+  // Rebuild targets to match new size; keep attractor state
+  buildTargets();
   targetIndex = 0;
   if (ATTRACTOR_ACTIVE) {
     for (let i = 0; i < particles.length; i++) {
