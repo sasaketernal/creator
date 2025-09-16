@@ -1,29 +1,41 @@
 // ====== STATE ======
 let particles = [];
 let cnv;
-let mode = 'CHAOS';  // 'ZEN' | 'CHAOS'
+
+let mode = 'CHAOS';        // 'ZEN' | 'CHAOS'  (motion/behavior)
+let theme = 'CHAOS';       // color palette name (independent from mode)
 let audioReady = false;
 
-let clickCount = 0;
-let ATTRACTOR_ACTIVE = false;
-let targets = [];            // array of {x, y}
-let targetGraphic;           // offscreen buffer used to sample text
-const AUTO_ACTIVATE_AFTER = 20;  // clicks/taps before auto-attractor
-
-// Visual params (auto-updated by setMode)
+// Visual params (mode-driven)
 let BG_TRAIL = 40;
 let TEXT_CHANCE = 0.012;
-let SPAWN_MIN = 5, SPAWN_MAX = 15;
+let SPAWN_MIN = 6, SPAWN_MAX = 18;
 let SPEED_MIN = 1, SPEED_MAX = 6;
+
+// Current palette applied from THEME_MAP
 let PALETTE = [];
 
-// Palettes
-const ZEN_PALETTE = [
-  [180, 220, 255], [200, 255, 220], [255, 230, 200], [210, 200, 255]
-];
-const CHAOS_PALETTE = [
-  [255, 70, 90], [70, 170, 255], [255, 230, 80], [160, 255, 120], [230, 90, 255]
-];
+// ====== PALETTES ======
+const THEME_MAP = {
+  'ZEN': [
+    [180, 220, 255], [200, 255, 220], [255, 230, 200], [210, 200, 255]
+  ],
+  'CHAOS': [
+    [255, 70, 90], [70, 170, 255], [255, 230, 80], [160, 255, 120], [230, 90, 255]
+  ],
+  'NEON': [
+    [57, 255, 20], [0, 255, 255], [255, 20, 147], [255, 255, 0], [255, 105, 180]
+  ],
+  'SUNSET': [
+    [255, 94, 77], [255, 149, 5], [255, 214, 102], [205, 97, 85], [255, 87, 51]
+  ],
+  'MONO': [
+    [230,230,230], [180,180,180], [140,140,140], [90,90,90], [255,255,255]
+  ],
+  'PASTEL': [
+    [255, 179, 186], [255, 223, 186], [255, 255, 186], [186, 255, 201], [186, 225, 255]
+  ],
+};
 
 // ====== AUDIO (p5.sound) ======
 function ensureAudio() {
@@ -32,7 +44,9 @@ function ensureAudio() {
     audioReady = true;
   }
 }
+
 function playClickSound() {
+  // Random short bleep using an oscillator + envelope
   const types = ['sine', 'triangle', 'square', 'sawtooth'];
   const osc = new p5.Oscillator(random(types));
   const env = new p5.Envelope();
@@ -65,11 +79,8 @@ function setup() {
   cnv = createCanvas(windowWidth, windowHeight);
   noStroke();
 
-  // offscreen buffer for target text
-  targetGraphic = createGraphics(windowWidth, windowHeight);
-
   setMode('CHAOS');
-  buildTargets(); // precompute target points
+  setTheme('CHAOS');
 
   // UI hooks
   document.getElementById('saveBtn').addEventListener('click', captureFrame);
@@ -79,7 +90,9 @@ function setup() {
     modeBtn.textContent = mode === 'ZEN' ? '🧘 Zen Mode' : '⚡ Chaos Mode';
   });
 
-  document.getElementById('attractBtn').addEventListener('click', activateAttractor);
+  const themeSelect = document.getElementById('themeSelect');
+  themeSelect.value = theme;
+  themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
 }
 
 function draw() {
@@ -88,23 +101,17 @@ function draw() {
   particles = particles.filter(p => p.life > 0);
 }
 
-// Mouse + Touch support
+// Mouse + Touch
 function mousePressed() {
   ensureAudio();
   spawnBurst(mouseX, mouseY);
   playClickSound();
-
-  clickCount++;
-  if (!ATTRACTOR_ACTIVE && clickCount >= AUTO_ACTIVATE_AFTER) activateAttractor();
 }
 function touchStarted() {
   ensureAudio();
   spawnBurst(touchX, touchY);
   playClickSound();
-
-  clickCount++;
-  if (!ATTRACTOR_ACTIVE && clickCount >= AUTO_ACTIVATE_AFTER) activateAttractor();
-  return false; // prevent scroll on mobile
+  return false;
 }
 
 // ====== PARTICLES ======
@@ -116,46 +123,16 @@ class Chaos {
     const c = random(PALETTE);
     this.col = [c[0], c[1], c[2], 220];
     this.life = 255;
-
-    // target info for attractor
-    this.target = null;
   }
-
-  assignTarget(t) {
-    if (t) this.target = createVector(t.x, t.y);
-  }
-
-  steerToTarget() {
-    if (!this.target) return;
-    const desired = p5.Vector.sub(this.target, this.pos);
-    const dist = desired.mag();
-    if (dist < 2) {
-      // settle gently at the target
-      this.vel.mult(0.85);
-      return;
-    }
-    desired.normalize();
-    desired.mult(mode === 'ZEN' ? 1.2 : 2.2); // desired speed toward target
-    // ease the velocity toward desired (smooth steering)
-    this.vel = p5.Vector.lerp(this.vel, desired, mode === 'ZEN' ? 0.06 : 0.12);
-    // mild damping so they don't overshoot
-    this.vel.limit(mode === 'ZEN' ? 2.2 : 3.2);
-  }
-
   update() {
-    if (ATTRACTOR_ACTIVE) this.steerToTarget();
     this.pos.add(this.vel);
-    // slow down life decay so particles persist for the formation
-    const decay = ATTRACTOR_ACTIVE ? (mode === 'ZEN' ? 1.4 : 1.8) : (mode === 'ZEN' ? 2.1 : 3.2);
-    this.life -= decay;
+    this.life -= mode === 'ZEN' ? 2.1 : 3.2;
   }
-
   display() {
     fill(this.col[0], this.col[1], this.col[2], this.life);
     ellipse(this.pos.x, this.pos.y, this.size);
 
-    // occasional text burst (less frequent when forming the letters)
-    if (!ATTRACTOR_ACTIVE && random() < TEXT_CHANCE) {
+    if (random() < (mode === 'ZEN' ? TEXT_CHANCE * 0.5 : TEXT_CHANCE)) {
       push();
       fill(255, this.life);
       textAlign(CENTER, CENTER);
@@ -168,152 +145,65 @@ class Chaos {
 
 function spawnBurst(x, y) {
   const n = floor(random(SPAWN_MIN, SPAWN_MAX));
-  for (let i = 0; i < n; i++) {
-    const p = new Chaos(x, y);
-    if (ATTRACTOR_ACTIVE) p.assignTarget(nextTarget());
-    particles.push(p);
-  }
+  for (let i = 0; i < n; i++) particles.push(new Chaos(x, y));
 }
 
-// ====== MODE CONTROL ======
+// ====== MODE & THEME ======
 function setMode(next) {
   mode = next;
   if (mode === 'ZEN') {
-    BG_TRAIL = 15;          // stronger persistence = smoother trails
-    TEXT_CHANCE = 0.004;    // fewer text bursts
+    BG_TRAIL = 15;
+    TEXT_CHANCE = 0.004;
     SPAWN_MIN = 3; SPAWN_MAX = 8;
     SPEED_MIN = 0.6; SPEED_MAX = 2.5;
-    PALETTE = ZEN_PALETTE;
     document.body.style.background = '#030b10';
   } else {
-    BG_TRAIL = 40;          // faster fade = punchier motion
-    TEXT_CHANCE = 0.012;    // frequent text bursts
+    BG_TRAIL = 40;
+    TEXT_CHANCE = 0.012;
     SPAWN_MIN = 6; SPAWN_MAX = 18;
     SPEED_MIN = 1; SPEED_MAX = 6;
-    PALETTE = CHAOS_PALETTE;
     document.body.style.background = '#000';
   }
 }
 
-// ====== ATTRACTOR (build points from "JUST CREATE") ======
-function buildTargets() {
-  targets = [];
-  targetGraphic.clear();
-  targetGraphic.pixelDensity(1); // predictable sampling
-
-  // scale text relative to viewport
-  const big = min(width, height);
-  const titleSize = big * 0.22;     // first line "JUST"
-  const subtitleSize = big * 0.22;  // second line "CREATE"
-  const gap = big * 0.05;
-
-  targetGraphic.push();
-  targetGraphic.background(0, 0); // fully transparent
-  targetGraphic.fill(255);
-  targetGraphic.noStroke();
-  targetGraphic.textAlign(CENTER, CENTER);
-
-  // Better fonts if available in the system; else default
-  targetGraphic.textSize(titleSize);
-  targetGraphic.text('JUST', width / 2, height / 2 - subtitleSize / 2 - gap / 2);
-  targetGraphic.textSize(subtitleSize);
-  targetGraphic.text('CREATE', width / 2, height / 2 + titleSize / 2 + gap / 2);
-  targetGraphic.pop();
-
-  targetGraphic.loadPixels();
-
-  // Sample pixels to get points on the letters
-  const step = floor(constrain(big * 0.01, 5, 12)); // sampling step based on size
-  for (let y = 0; y < targetGraphic.height; y += step) {
-    for (let x = 0; x < targetGraphic.width; x += step) {
-      const idx = 4 * (y * targetGraphic.width + x);
-      const alpha = targetGraphic.pixels[idx + 3];
-      if (alpha > 128) { // on the letters
-        targets.push({ x, y });
-      }
-    }
-  }
-
-  // Shuffle for prettier distribution
-  shuffleArray(targets);
-}
-
-function activateAttractor() {
-  if (ATTRACTOR_ACTIVE) return;
-  ATTRACTOR_ACTIVE = true;
-
-  // Make sure we have fresh targets (in case of resize)
-  if (targets.length === 0) buildTargets();
-
-  // Assign targets to existing particles
-  for (let i = 0; i < particles.length; i++) {
-    particles[i].assignTarget(nextTarget());
-  }
-  // Small congratulatory bleep
-  ensureAudio();
-  const osc = new p5.Oscillator('triangle');
-  const env = new p5.Envelope(0.01, 0.25, 0.1, 0.4);
-  osc.freq(520);
-  osc.start();
-  env.play(osc);
-  setTimeout(() => osc.stop(), 600);
-}
-
-let targetIndex = 0;
-function nextTarget() {
-  if (targets.length === 0) return null;
-  const t = targets[targetIndex % targets.length];
-  targetIndex++;
-  return t;
+function setTheme(name) {
+  theme = name in THEME_MAP ? name : 'CHAOS';
+  PALETTE = THEME_MAP[theme];
+  // If theme is MONO, make text brighter for contrast
+  // (kept simple; canvas bg remains black)
 }
 
 // ====== SAVE / WATERMARK ======
 function keyPressed() {
   if (key === 's' || key === 'S') captureFrame();
 }
+
 function captureFrame() {
   toggleUI(false);
-  // Watermark only on exported image
+
+  // Watermark only on export
   push();
   noStroke();
-  fill(255, 180);
+  fill(255, 190);
   textSize(14);
   textAlign(RIGHT, BOTTOM);
-  const tag = ATTRACTOR_ACTIVE ? 'FORMED' : mode;
-  text(`#JustCreate • ${tag} • @CreatorCoin`, width - 10, height - 10);
+  text(`#JustCreate • ${mode} • ${theme} • @CreatorCoin`, width - 10, height - 10);
   pop();
 
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  saveCanvas(cnv, `just-create-${tag.toLowerCase()}-${ts}`, 'png');
+  saveCanvas(cnv, `just-create-${mode.toLowerCase()}-${theme.toLowerCase()}-${ts}`, 'png');
 
   redraw();
   setTimeout(() => toggleUI(true), 50);
 }
 
 function toggleUI(show) {
-  for (const id of ['info', 'saveBtn', 'modeBtn', 'attractBtn']) {
+  for (const id of ['info', 'saveBtn', 'modeBtn', 'controls']) {
     const el = document.getElementById(id);
     if (el) el.style.visibility = show ? 'visible' : 'hidden';
   }
 }
 
-// ====== UTIL ======
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  // Rebuild targets to match new size; keep attractor state
-  buildTargets();
-  targetIndex = 0;
-  if (ATTRACTOR_ACTIVE) {
-    for (let i = 0; i < particles.length; i++) {
-      particles[i].assignTarget(nextTarget());
-    }
-  }
-}
-
-// Fisher–Yates shuffle
-function shuffleArray(a) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = floor(random(i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
 }
