@@ -20,10 +20,10 @@
         background: var(--ui-bg); padding: 6px 10px; border-radius: 8px; font-size: 14px;
       }
       #controls {
-        top: 10px; left: 10px; display: flex; gap: 8px; align-items: center;
+        top: 10px; left: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
         background: var(--ui-bg); padding: 6px 8px; border-radius: 10px;
       }
-      select, .btn {
+      select, .btn, input[type="checkbox"] + label {
         border: 0; border-radius: 10px; background: var(--ui-bg);
         color: var(--ui-text); padding: 8px 10px; font-weight: 600; cursor: pointer;
       }
@@ -31,6 +31,8 @@
       #modeBtn { right: 12px; bottom: 56px; position: fixed; }
       #saveBtn { right: 12px; bottom: 12px; position: fixed; }
       label { font-size: 12px; opacity: .9; }
+      .checkwrap { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius: 10px; background: var(--ui-bg); }
+      .checkwrap input { transform: scale(1.1); }
     </style>
   </head>
   <body>
@@ -46,6 +48,11 @@
         <option value="MONO">Monochrome</option>
         <option value="PASTEL">Pastel Pop</option>
       </select>
+
+      <div class="checkwrap">
+        <input type="checkbox" id="emojiToggle" checked />
+        <label for="emojiToggle">Enable Emojis</label>
+      </div>
     </div>
 
     <button id="modeBtn" class="ui btn" aria-label="Toggle Zen/Chaos Mode">🧘 Zen Mode</button>
