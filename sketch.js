@@ -206,7 +206,7 @@ function captureFrame() {
   fill(255, 190);
   textSize(14);
   textAlign(RIGHT, BOTTOM);
-  text(`#JustCreate • ${mode} • ${theme} • ${emojisEnabled ? 'EMOJI' : 'NO-EMOJI'} • @CreatorCoin`,
+  text(`#JustCreate • ${mode} • ${theme} • ${emojisEnabled ? 'EMOJI' : 'NO-EMOJI'} • CREATOR`,
        width - 10, height - 10);
   pop();
 
